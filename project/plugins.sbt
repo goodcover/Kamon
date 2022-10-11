@@ -14,3 +14,5 @@ addSbtPlugin("com.jsuereth" % "sbt-pgp" % "2.0.1")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.5.0")
 
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.3")
+addSbtPlugin("com.frugalmechanic" % "fm-sbt-s3-resolver" % "0.21.0")
+

@@ -175,7 +175,12 @@ object BaseProject extends AutoPlugin {
   )
 
   private lazy val publishingSettings = Seq(
-    publishTo := sonatypePublishToBundle.value,
+    publishTo := {
+      if (isSnapshot.value)
+        Some("Goodcover Snapshots" at "s3://s3-us-west-2.amazonaws.com/goodcover-prod-usw2/snapshots")
+      else
+        Some("Goodcover Releases" at "s3://s3-us-west-2.amazonaws.com/goodcover-prod-usw2/releases")
+    },
     pomExtra := defaultPomExtra(),
     Test / publishArtifact := false,
     Global / useGpgPinentry := true,
