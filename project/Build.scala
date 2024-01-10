@@ -20,6 +20,7 @@ import sbtdynver.DynVerPlugin.autoImport.dynver
 import xerial.sbt.Sonatype.SonatypeKeys._
 
 object BaseProject extends AutoPlugin {
+  lazy val REPOSITORY_URL: String = sys.env.getOrElse("REPOSITORY_URL", "https://nexus.gc4.infra.goodcover.com")
 
   object autoImport {
 
@@ -176,7 +177,13 @@ object BaseProject extends AutoPlugin {
   )
 
   private lazy val publishingSettings = Seq(
-    publishTo := sonatypePublishToBundle.value,
+    version := version.value + "-SNAPSHOT",
+    publishTo := {
+      if (isSnapshot.value)
+        Some(("Goodcover Snapshots" at s"${REPOSITORY_URL}/repository/maven-gc-snapshots").withAllowInsecureProtocol(true))
+      else
+        Some(("Goodcover Releases" at s"${REPOSITORY_URL}/repository/maven-gc-releases").withAllowInsecureProtocol(true))
+    },
     pomExtra := defaultPomExtra(),
     Test / publishArtifact := false,
     Global / useGpgPinentry := true,
