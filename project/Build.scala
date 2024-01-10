@@ -177,17 +177,12 @@ object BaseProject extends AutoPlugin {
   )
 
   private lazy val publishingSettings = Seq(
+    version := version.value + "-SNAPSHOT",
     publishTo := {
       if (isSnapshot.value)
-        Some(
-          ("Goodcover Snapshots" at s"${REPOSITORY_URL}/repository/maven-gc-snapshots")
-            .withAllowInsecureProtocol(true)
-        )
+        Some(("Goodcover Snapshots" at s"${REPOSITORY_URL}/repository/maven-gc-snapshots").withAllowInsecureProtocol(true))
       else
-        Some(
-          ("Goodcover Releases" at s"${REPOSITORY_URL}/repository/maven-gc-releases")
-            .withAllowInsecureProtocol(true)
-        )
+        Some(("Goodcover Releases" at s"${REPOSITORY_URL}/repository/maven-gc-releases").withAllowInsecureProtocol(true))
     },
     pomExtra := defaultPomExtra(),
     Test / publishArtifact := false,
