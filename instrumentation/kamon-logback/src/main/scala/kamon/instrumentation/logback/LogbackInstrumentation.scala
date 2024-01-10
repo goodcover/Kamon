@@ -29,6 +29,7 @@ import kanela.agent.libs.net.bytebuddy.implementation.bind.annotation.{RuntimeTy
 import org.slf4j.MDC
 
 import java.util.concurrent.Callable
+import scala.annotation.static
 import scala.collection.JavaConverters._
 
 
@@ -38,10 +39,10 @@ class LogbackInstrumentation extends InstrumentationBuilder {
     .mixin(classOf[HasContext.MixinWithInitializer])
 
   onType("ch.qos.logback.core.spi.AppenderAttachableImpl")
-    .advise(method("appendLoopOnAppenders"), AppendLoopOnAppendersAdvice)
+    .advise(method("appendLoopOnAppenders"), classOf[AppendLoopOnAppendersAdvice])
 
-  onType("ch.qos.logback.classic.util.LogbackMDCAdapter")
-    .intercept(method("getPropertyMap"), GetPropertyMapMethodInterceptor)
+  onType("ch.qos.logback.classic.spi.LoggingEvent")
+    .intercept(method("getMDCPropertyMap"), classOf[GetPropertyMapMethodInterceptor])
 }
 
 object LogbackInstrumentation {
@@ -57,6 +58,7 @@ object LogbackInstrumentation {
     mdcTraceIdKey: String,
     mdcSpanIdKey: String,
     mdcSpanOperationNameKey: String,
+    mdcSourceThreadKey: String,
     mdcCopyTags: Boolean,
     mdcCopyKeys: Seq[String]
   )
@@ -69,27 +71,30 @@ object LogbackInstrumentation {
       logbackConfig.getString("mdc.trace-id-key"),
       logbackConfig.getString("mdc.span-id-key"),
       logbackConfig.getString("mdc.span-operation-name-key"),
+      logbackConfig.getString("mdc.source-thread-key"),
       logbackConfig.getBoolean("mdc.copy.tags"),
       logbackConfig.getStringList("mdc.copy.entries").asScala.toSeq
     )
   }
 }
 
+class AppendLoopOnAppendersAdvice
 object AppendLoopOnAppendersAdvice {
 
   @Advice.OnMethodEnter
-  def enter(@Advice.Argument(0) event: Any): Scope =
+  @static def enter(@Advice.Argument(0) event: Any): Scope =
     Kamon.storeContext(event.asInstanceOf[HasContext].context)
 
   @Advice.OnMethodExit
-  def exit(@Advice.Enter scope: Scope): Unit =
+  @static def exit(@Advice.Enter scope: Scope): Unit =
     scope.close()
 }
 
+class GetPropertyMapMethodInterceptor
 object GetPropertyMapMethodInterceptor {
 
   @RuntimeType
-  def aroundGetMDCPropertyMap(@SuperCall callable: Callable[_]): Any = {
+  @static def aroundGetMDCPropertyMap(@SuperCall callable: Callable[_]): Any = {
     val settings = LogbackInstrumentation.settings()
 
     if (settings.propagateContextToMDC) {

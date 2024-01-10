@@ -40,14 +40,7 @@ private[kafka] object RecordProcessor {
       val consumerInfo = ConsumerInfo(resolve(groupId), clientId)
 
       records.iterator().asScala.foreach(record => {
-        val header = Option(record.headers.lastHeader(KafkaInstrumentation.Keys.ContextHeader))
-
-        val incomingContext = header.map { h =>
-          ContextSerializationHelper.fromByteArray(h.value())
-        }.getOrElse(Context.Empty)
-
         record.asInstanceOf[ConsumedRecordData].set(
-          incomingContext,
           Kamon.clock().nanosSince(startTime),
           consumerInfo
         )
