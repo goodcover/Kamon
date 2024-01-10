@@ -12,15 +12,7 @@
  * and limitations under the License.
  * =========================================================================================
  */
-import com.amazonaws.auth.{AWSCredentialsProviderChain, DefaultAWSCredentialsProviderChain}
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
 
-s3CredentialsProvider := { (_: String) =>
-  new AWSCredentialsProviderChain(
-    new ProfileCredentialsProvider("goodcover-dev"),
-    DefaultAWSCredentialsProviderChain.getInstance()
-  )
-}
 
 lazy val kamon = (project in file("."))
   .disablePlugins(AssemblyPlugin)
