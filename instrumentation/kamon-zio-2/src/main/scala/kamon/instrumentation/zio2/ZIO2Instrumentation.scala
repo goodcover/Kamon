@@ -4,15 +4,14 @@ import kamon.Kamon
 import kamon.context.Storage
 import kamon.instrumentation.context.HasContext
 import kanela.agent.api.instrumentation.InstrumentationBuilder
-import zio.{Exit, Fiber, Supervisor, UIO, Unsafe, ZEnvironment, ZIO}
-
+import zio.{ Exit, Fiber, Supervisor, UIO, Unsafe, ZEnvironment, ZIO }
 
 /**
  * This works as follows.
- *  - patches the defaultSupervisor val from Runtime to add our own supervisor.
- *  - Mixes in the [[HasContext.Mixin]] class so we don't have to keep a separate map of Fiber -> Context
- *  - Performs context shifting based on starting/suspending of fibers.
- *
+ *   - patches the defaultSupervisor val from Runtime to add our own supervisor.
+ *   - Mixes in the [[HasContext.Mixin]] class so we don't have to keep a
+ *     separate map of Fiber -> Context
+ *   - Performs context shifting based on starting/suspending of fibers.
  */
 class ZIO2Instrumentation extends InstrumentationBuilder {
 
@@ -25,8 +24,9 @@ class ZIO2Instrumentation extends InstrumentationBuilder {
 }
 
 /**
- * Mixin that exposes access to the scope captured by an instrumented instance. The interface exposes means of getting and more importantly
- * closing of the scope.
+ * Mixin that exposes access to the scope captured by an instrumented instance.
+ * The interface exposes means of getting and more importantly closing of the
+ * scope.
  */
 trait HasStorage {
 
@@ -55,22 +55,24 @@ object HasStorage {
   }
 }
 
-
 class NewSupervisor extends Supervisor[Any] {
 
   override def value(implicit trace: zio.Trace): UIO[Any] = ZIO.unit
 
-  override def onStart[R, E, A_](environment: ZEnvironment[R], effect: ZIO[R, E, A_], parent: Option[Fiber.Runtime[Any, Any]], fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
+  override def onStart[R, E, A_](
+    environment: ZEnvironment[R],
+    effect: ZIO[R, E, A_],
+    parent: Option[Fiber.Runtime[Any, Any]],
+    fiber: Fiber.Runtime[E, A_]
+  )(implicit unsafe: Unsafe): Unit =
     fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
-  }
 
-  override def onSuspend[E, A_](fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
+  override def onSuspend[E, A_](fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit =
     fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
-  }
 
   override def onResume[E, A_](fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
     val fiberInstance = fiber.asInstanceOf[HasContext with HasStorage]
-    val ctx = fiberInstance.context
+    val ctx           = fiberInstance.context
     fiberInstance.setKamonScope(Kamon.storeContext(ctx))
   }
 

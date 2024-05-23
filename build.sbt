@@ -59,7 +59,7 @@ lazy val `kamon-core` = (project in file("core/kamon-core"))
       ).inAll
     ),
     libraryDependencies ++= Seq(
-      "com.typesafe"      %  "config"       % "1.4.1",
+      "com.typesafe"      %  "config"       % "1.4.3",
       "org.slf4j"         %  "slf4j-api"    % "1.7.36",
       "org.hdrhistogram"  %  "HdrHistogram" % "2.1.9" % "provided,shaded",
       "org.jctools"       %  "jctools-core" % "3.3.0" % "provided,shaded",
@@ -127,6 +127,7 @@ val instrumentationProjects = Seq[ProjectReference](
   `kamon-mongo-legacy`,
   `kamon-cassandra`,
   `kamon-elasticsearch`,
+  `kamon-opensearch`,
   `kamon-spring`,
   `kamon-annotation`,
   `kamon-annotation-api`,
@@ -145,7 +146,10 @@ val instrumentationProjects = Seq[ProjectReference](
   `kamon-lagom`,
   `kamon-finagle`,
   `kamon-aws-sdk`,
-  `kamon-alpakka-kafka`
+  `kamon-alpakka-kafka`,
+  `kamon-http4s-1_0`,
+  `kamon-http4s-0_23`,
+  `kamon-apache-httpclient`
 )
 
 lazy val instrumentation = (project in file("instrumentation"))
@@ -186,7 +190,7 @@ lazy val `kamon-executors-bench` = (project in file("instrumentation/kamon-execu
   .settings(noPublishing: _*)
   .settings(
     libraryDependencies ++= Seq(
-      "com.google.guava" % "guava" % "24.1-jre",
+      "com.google.guava" % "guava" % "33.0.0-jre",
       kanelaAgent % "provided",
     )
   ).dependsOn(`kamon-core`, `kamon-instrumentation-common`)
@@ -400,6 +404,22 @@ lazy val `kamon-elasticsearch` = (project in file("instrumentation/kamon-elastic
       logbackClassic % "test",
       "com.dimafeng" %% "testcontainers-scala" % "0.41.0" % "test",
       "com.dimafeng" %% "testcontainers-scala-elasticsearch" % "0.41.0" % "test"
+    )
+  ).dependsOn(`kamon-core`, `kamon-instrumentation-common`, `kamon-testkit` % "test")
+
+lazy val `kamon-opensearch` = (project in file("instrumentation/kamon-opensearch"))
+  .disablePlugins(AssemblyPlugin)
+  .enablePlugins(JavaAgent)
+  .settings(instrumentationSettings)
+  .settings(
+    Test / run / fork := true,
+    libraryDependencies ++= Seq(
+      kanelaAgent % "provided",
+      "org.opensearch.client" % "opensearch-rest-client" % "1.3.14" % "provided",
+      "org.opensearch.client" % "opensearch-rest-high-level-client" % "1.3.14" % "provided",
+      scalatest % "test",
+      logbackClassic % "test",
+      "com.dimafeng" %% "testcontainers-scala" % "0.41.0" % "test",
     )
   ).dependsOn(`kamon-core`, `kamon-instrumentation-common`, `kamon-testkit` % "test")
 
@@ -631,7 +651,7 @@ lazy val `kamon-okhttp` = (project in file("instrumentation/kamon-okhttp"))
   .settings(
     libraryDependencies ++= Seq(
       kanelaAgent % "provided",
-      "com.squareup.okhttp3"      % "okhttp"                    % "4.10.0" % "provided",
+      "com.squareup.okhttp3"      % "okhttp"                    % "4.12.0" % "provided",
 
       scalatest % "test",
       logbackClassic % "test",
@@ -758,6 +778,69 @@ lazy val `kamon-alpakka-kafka` = (project in file("instrumentation/kamon-alpakka
     )
   ).dependsOn(`kamon-core`, `kamon-akka`, `kamon-testkit` % "test")
 
+lazy val `kamon-http4s-1_0` = (project in file("instrumentation/kamon-http4s-1.0"))
+  .disablePlugins(AssemblyPlugin)
+  .enablePlugins(JavaAgent)
+  .settings(instrumentationSettings)
+  .settings(
+    name := "kamon-http4s-1.0",
+    crossScalaVersions := Seq(`scala_2.13_version`, `scala_3_version`),
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-client" % "1.0.0-M38" % Provided,
+      "org.http4s" %% "http4s-server" % "1.0.0-M38" % Provided,
+      "org.http4s" %% "http4s-blaze-client" % "1.0.0-M38" % Test,
+      "org.http4s" %% "http4s-blaze-server" % "1.0.0-M38" % Test,
+      "org.http4s" %% "http4s-dsl" % "1.0.0-M38" % Test,
+      scalatest % Test,
+    )
+  )
+  .dependsOn(
+      `kamon-core`,
+      `kamon-instrumentation-common`,
+      `kamon-testkit` % Test)
+
+lazy val `kamon-http4s-0_23` = (project in file("instrumentation/kamon-http4s-0.23"))
+  .disablePlugins(AssemblyPlugin)
+  .enablePlugins(JavaAgent)
+  .settings(instrumentationSettings)
+  .settings(
+    name := "kamon-http4s-0.23",
+    scalacOptions ++= { if(scalaBinaryVersion.value == "2.12") Seq("-Ypartial-unification") else Seq.empty },
+    crossScalaVersions := Seq(`scala_2.12_version`, `scala_2.13_version`, `scala_3_version`),
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-client" % "0.23.19" % Provided,
+      "org.http4s" %% "http4s-server" % "0.23.19" % Provided,
+      "org.http4s" %% "http4s-blaze-client" % "0.23.14" % Test,
+      "org.http4s" %% "http4s-blaze-server" % "0.23.14" % Test,
+      "org.http4s" %% "http4s-dsl" % "0.23.19" % Test,
+      scalatest % Test
+    )
+  )
+  .dependsOn(
+    `kamon-core`,
+    `kamon-instrumentation-common`,
+    `kamon-testkit` % Test
+  )
+
+lazy val `kamon-apache-httpclient` = (project in file("instrumentation/kamon-apache-httpclient"))
+  .disablePlugins(AssemblyPlugin)
+  .enablePlugins(JavaAgent)
+  .settings(instrumentationSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      kanelaAgent % "provided",
+      "org.apache.httpcomponents" % "httpclient" % "4.0" % "provided",
+      slf4jApi % "provided",
+
+      scalatest % "test",
+      logbackClassic % "test",
+      "org.mock-server" % "mockserver-client-java" % "5.13.2" % "test",
+      "com.dimafeng" %% "testcontainers-scala" % "0.41.0" % "test",
+      "com.dimafeng" %% "testcontainers-scala-mockserver" % "0.41.0" % "test"
+    )
+  ).dependsOn(`kamon-core`, `kamon-executors`, `kamon-testkit` % "test")
+
+
 /**
  * Reporters
  */
@@ -794,7 +877,7 @@ lazy val `kamon-datadog` = (project in file("reporters/kamon-datadog"))
     ),
     libraryDependencies ++= Seq(
       okHttp % "shaded,provided",
-      "com.grack" % "nanojson" % "1.6",
+      "com.grack" % "nanojson" % "1.8",
 
       ("com.typesafe.play" %% "play-json" % "2.7.4" % "test").cross(CrossVersion.for3Use2_13),
       scalatest % "test",
@@ -848,8 +931,8 @@ lazy val `kamon-zipkin` = (project in file("reporters/kamon-zipkin"))
   .disablePlugins(AssemblyPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      "io.zipkin.reporter2" % "zipkin-reporter" % "2.7.15",
-      "io.zipkin.reporter2" % "zipkin-sender-okhttp3" % "2.7.15",
+      "io.zipkin.reporter2" % "zipkin-reporter" % "3.3.0",
+      "io.zipkin.reporter2" % "zipkin-sender-okhttp3" % "3.3.0",
       scalatest % "test"
     )
   ).dependsOn(`kamon-core`)
@@ -890,8 +973,8 @@ lazy val `kamon-newrelic` = (project in file("reporters/kamon-newrelic"))
   .disablePlugins(AssemblyPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      "com.newrelic.telemetry" % "telemetry-core" % "0.15.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.15.0",
+      "com.newrelic.telemetry" % "telemetry-core" % "0.16.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.16.0",
       scalatest % "test",
       "org.mockito" % "mockito-core" % "3.12.4" % "test"
     )
@@ -901,8 +984,7 @@ lazy val `kamon-opentelemetry` = (project in file("reporters/kamon-opentelemetry
   .disablePlugins(AssemblyPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      "io.opentelemetry" % "opentelemetry-exporter-otlp-http-trace" % "1.13.0",
-      "io.opentelemetry" % "opentelemetry-exporter-otlp-trace" % "1.13.0",
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.35.0",
       // Compile-time dependency required in scala 3
       "com.google.auto.value" % "auto-value-annotations" % "1.9" % "compile",
 
@@ -1013,6 +1095,7 @@ lazy val `kamon-bundle-dependencies-all` = (project in file("bundle/kamon-bundle
     `kamon-mongo-legacy`,
     `kamon-cassandra`,
     `kamon-elasticsearch`,
+    `kamon-opensearch`,
     `kamon-spring`,
     `kamon-annotation`,
     `kamon-annotation-api`,
@@ -1024,7 +1107,8 @@ lazy val `kamon-bundle-dependencies-all` = (project in file("bundle/kamon-bundle
     `kamon-okhttp`,
     `kamon-caffeine`,
     `kamon-lagom`,
-    `kamon-aws-sdk`
+    `kamon-aws-sdk`,
+    `kamon-apache-httpclient`
   )
 
 /**
@@ -1072,6 +1156,7 @@ lazy val `kamon-bundle-dependencies-3` = (project in file("bundle/kamon-bundle-d
     `kamon-jdbc`,
     `kamon-kafka`,
     `kamon-elasticsearch`,
+    `kamon-opensearch`,
     `kamon-spring`,
     `kamon-annotation`,
     `kamon-annotation-api`,
@@ -1087,7 +1172,8 @@ lazy val `kamon-bundle-dependencies-3` = (project in file("bundle/kamon-bundle-d
     `kamon-zio-2`,
     `kamon-pekko`,
     `kamon-pekko-http`,
-    `kamon-pekko-grpc`
+    `kamon-pekko-grpc`,
+    `kamon-apache-httpclient`
   )
 
 lazy val `kamon-bundle` = (project in file("bundle/kamon-bundle"))
