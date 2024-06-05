@@ -149,7 +149,8 @@ val instrumentationProjects = Seq[ProjectReference](
   `kamon-alpakka-kafka`,
   `kamon-http4s-1_0`,
   `kamon-http4s-0_23`,
-  `kamon-apache-httpclient`
+  `kamon-apache-httpclient`,
+  `kamon-apache-cxf`
 )
 
 lazy val instrumentation = (project in file("instrumentation"))
@@ -550,7 +551,7 @@ lazy val `kamon-pekko` = (project in file("instrumentation/kamon-pekko"))
   .settings(Seq(
     crossScalaVersions := Seq(`scala_2.12_version`, `scala_2.13_version`, scala_3_version),
     libraryDependencies ++= Seq(
-      "org.apache.pekko" %% "pekko-actor" % pekkoHttpVersion % "provided"
+      "org.apache.pekko" %% "pekko-actor" % "1.0.1" % "provided"
     )
   ))
   .dependsOn(
@@ -840,6 +841,25 @@ lazy val `kamon-apache-httpclient` = (project in file("instrumentation/kamon-apa
     )
   ).dependsOn(`kamon-core`, `kamon-executors`, `kamon-testkit` % "test")
 
+lazy val `kamon-apache-cxf` = (project in file("instrumentation/kamon-apache-cxf"))
+  .disablePlugins(AssemblyPlugin)
+  .enablePlugins(JavaAgent)
+  .settings(instrumentationSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      kanelaAgent % "provided",
+      "org.apache.cxf" % "cxf-rt-frontend-simple" % "3.3.6" % "provided",
+      slf4jApi % "provided",
+
+      scalatest % "test",
+      logbackClassic % "test",
+      "org.mock-server" % "mockserver-client-java" % "5.13.2" % "test",
+      "com.dimafeng" %% "testcontainers-scala" % "0.41.0" % "test",
+      "com.dimafeng" %% "testcontainers-scala-mockserver" % "0.41.0" % "test",
+      "org.apache.cxf" % "cxf-rt-frontend-jaxws" % "3.3.6" % "test",
+      "org.apache.cxf" % "cxf-rt-transports-http" % "3.3.6" % "test",
+    )
+  ).dependsOn(`kamon-core`, `kamon-executors`, `kamon-testkit` % "test")
 
 /**
  * Reporters
@@ -1108,7 +1128,8 @@ lazy val `kamon-bundle-dependencies-all` = (project in file("bundle/kamon-bundle
     `kamon-caffeine`,
     `kamon-lagom`,
     `kamon-aws-sdk`,
-    `kamon-apache-httpclient`
+    `kamon-apache-httpclient`,
+    `kamon-apache-cxf`
   )
 
 /**
@@ -1173,7 +1194,8 @@ lazy val `kamon-bundle-dependencies-3` = (project in file("bundle/kamon-bundle-d
     `kamon-pekko`,
     `kamon-pekko-http`,
     `kamon-pekko-grpc`,
-    `kamon-apache-httpclient`
+    `kamon-apache-httpclient`,
+    `kamon-apache-cxf`
   )
 
 lazy val `kamon-bundle` = (project in file("bundle/kamon-bundle"))
