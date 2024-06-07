@@ -55,7 +55,9 @@ object HasStorage {
   }
 }
 
+
 class NewSupervisor extends Supervisor[Any] {
+
 
   override def value(implicit trace: zio.Trace): UIO[Any] = ZIO.unit
 
@@ -64,20 +66,26 @@ class NewSupervisor extends Supervisor[Any] {
     effect: ZIO[R, E, A_],
     parent: Option[Fiber.Runtime[Any, Any]],
     fiber: Fiber.Runtime[E, A_]
-  )(implicit unsafe: Unsafe): Unit =
-    fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
+  )(implicit unsafe: Unsafe): Unit = {
+    val fi = fiber.asInstanceOf[HasContext with HasStorage]
+    fi.setContext(Kamon.currentContext())
+  }
 
-  override def onSuspend[E, A_](fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit =
-    fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
+  override def onSuspend[E, A_](fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
+    val fi = fiber.asInstanceOf[HasContext with HasStorage]
+    fi.setContext(Kamon.currentContext())
+    fi.kamonScope.close()
+  }
 
   override def onResume[E, A_](fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
-    val fiberInstance = fiber.asInstanceOf[HasContext with HasStorage]
-    val ctx           = fiberInstance.context
-    fiberInstance.setKamonScope(Kamon.storeContext(ctx))
+    val fi = fiber.asInstanceOf[HasContext with HasStorage]
+    val ctx = fi.context
+    fi.setKamonScope(Kamon.storeContext(ctx))
   }
 
   override def onEnd[R, E, A_](value: Exit[E, A_], fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
-    val fiberInstance = fiber.asInstanceOf[HasContext with HasStorage]
-    fiberInstance.kamonScope.close()
+    val fi = fiber.asInstanceOf[HasContext with HasStorage]
+    fi.kamonScope.close()
+    ()
   }
 }
