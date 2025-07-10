@@ -4,18 +4,22 @@ import kamon.Kamon
 import kamon.context.Storage
 import kamon.instrumentation.context.HasContext
 import kanela.agent.api.instrumentation.InstrumentationBuilder
+import kanela.agent.libs.net.bytebuddy.asm.Advice
 import zio.{Exit, Fiber, Supervisor, UIO, Unsafe, ZEnvironment, ZIO}
+
+import scala.annotation.static
 
 /**
  * This works as follows.
- *  - patches the defaultSupervisor val from Runtime to add our own supervisor.
- *  - Mixes in the [[HasContext.Mixin]] class so we don't have to keep a separate map of Fiber -> Context
- *  - Performs context shifting based on starting/suspending of fibers.
- *
+ *   - patches the defaultSupervisor val from Runtime to add our own supervisor.
+ *   - Mixes in the [[HasContext.Mixin]] class so we don't have to keep a
+ *     separate map of Fiber -> Context
+ *   - Performs context shifting based on starting/suspending of fibers.
  */
 class ZIO2Instrumentation extends InstrumentationBuilder {
 
   onType("zio.internal.FiberRuntime")
+    .advise(isConstructor.and(takesArguments(3)), AfterFiberInit)
     .mixin(classOf[HasContext.Mixin])
     .mixin(classOf[HasStorage.Mixin])
 
@@ -24,8 +28,9 @@ class ZIO2Instrumentation extends InstrumentationBuilder {
 }
 
 /**
- * Mixin that exposes access to the scope captured by an instrumented instance. The interface exposes means of getting and more importantly
- * closing of the scope.
+ * Mixin that exposes access to the scope captured by an instrumented instance.
+ * The interface exposes means of getting and more importantly closing of the
+ * scope.
  */
 trait HasStorage {
 
@@ -54,7 +59,17 @@ object HasStorage {
   }
 }
 
+class AfterFiberInit
+object AfterFiberInit {
+
+  @Advice.OnMethodExit
+  @static def exit(@Advice.This fiber: Any): Unit = {
+    fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
+  }
+}
+
 class NewSupervisor extends Supervisor[Any] {
+
 
   override def value(implicit trace: zio.Trace): UIO[Any] = ZIO.unit
 
@@ -64,21 +79,24 @@ class NewSupervisor extends Supervisor[Any] {
     parent: Option[Fiber.Runtime[Any, Any]],
     fiber: Fiber.Runtime[E, A_]
   )(implicit unsafe: Unsafe): Unit = {
-    fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
+    ()
   }
 
   override def onSuspend[E, A_](fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
-    fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
+    val fi = fiber.asInstanceOf[HasContext with HasStorage]
+    fi.setContext(Kamon.currentContext())
+    fi.kamonScope.close()
   }
 
   override def onResume[E, A_](fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
-    val fiberInstance = fiber.asInstanceOf[HasContext with HasStorage]
-    val ctx = fiberInstance.context
-    fiberInstance.setKamonScope(Kamon.storeContext(ctx))
+    val fi = fiber.asInstanceOf[HasContext with HasStorage]
+    val ctx = fi.context
+    fi.setKamonScope(Kamon.storeContext(ctx))
   }
 
   override def onEnd[R, E, A_](value: Exit[E, A_], fiber: Fiber.Runtime[E, A_])(implicit unsafe: Unsafe): Unit = {
-    val fiberInstance = fiber.asInstanceOf[HasContext with HasStorage]
-    fiberInstance.kamonScope.close()
+    val fi = fiber.asInstanceOf[HasContext with HasStorage]
+    fi.kamonScope.close()
+    ()
   }
 }

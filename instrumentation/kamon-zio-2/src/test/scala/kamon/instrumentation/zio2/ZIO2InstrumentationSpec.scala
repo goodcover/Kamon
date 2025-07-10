@@ -1,5 +1,6 @@
 package kamon.instrumentation.zio2
 
+
 import kamon.Kamon
 import kamon.context.Context
 import kamon.tag.Lookups.plain
@@ -18,6 +19,7 @@ import scala.concurrent.duration.FiniteDuration
 
 class ZIO2InstrumentationSpec extends AnyWordSpec with Matchers with ScalaFutures with PatienceConfiguration
     with OptionValues with Eventually with BeforeAndAfterEach {
+
 
   protected implicit val zioRuntime: Runtime[Any] =
     Runtime.default
@@ -66,6 +68,7 @@ class ZIO2InstrumentationSpec extends AnyWordSpec with Matchers with ScalaFuture
       "must allow the context to be cleaned" in {
         val anotherExecutor =
           Executor.fromExecutionContext(ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(10)))
+
         val context = Context.of("key", "value")
 
         val test =
@@ -87,6 +90,7 @@ class ZIO2InstrumentationSpec extends AnyWordSpec with Matchers with ScalaFuture
       "must be available across asynchronous boundaries" in {
         val anotherExecutor: Executor =
           Executor.fromExecutionContext(ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))) // pool 7
+
         val context = Context.of("key", "value")
         val test =
           for {
@@ -95,6 +99,7 @@ class ZIO2InstrumentationSpec extends AnyWordSpec with Matchers with ScalaFuture
             _ <- ZIO.succeed(len.toString)
             beforeChanging <- getKey
             evalOnGlobalRes <- ZIO.sleep(Duration.Zero) *> getKey
+
             outerSpanIdBeginning <- ZIO.succeed(Kamon.currentSpan().id.string)
             innerSpan <- ZIO.succeed(Kamon.clientSpanBuilder("Foo", "attempt").context(context).start())
             innerSpanId1 <- ZIO.onExecutor(anotherExecutor)(ZIO.succeed(Kamon.currentSpan()))
@@ -114,6 +119,7 @@ class ZIO2InstrumentationSpec extends AnyWordSpec with Matchers with ScalaFuture
           }
 
         unsafeRunZIO(test)
+
 
       }
 
@@ -149,6 +155,7 @@ class ZIO2InstrumentationSpec extends AnyWordSpec with Matchers with ScalaFuture
           nestedUpToLevel2._1.id.string shouldBe nestedUpToLevel2._2._1.parentId.string
           fiftyInParallel.map(_._1.parentId.string).toSet shouldBe Set(span.id.string)
           fiftyInParallel.map(_._1.id.string).toSet should have size 50
+
           afterCede._1.id.string shouldBe afterCede._2.id.string // A cede should not cause the span to be lost
           afterEverything.id.string shouldBe span.id.string
         }
@@ -165,6 +172,12 @@ class ZIO2InstrumentationSpec extends AnyWordSpec with Matchers with ScalaFuture
         Await.result(result, FiniteDuration(100, "seconds"))
       }
     }
+  }
+
+  override protected def afterEach(): Unit = {
+    super.afterEach()
+
+    kamon.context.Storage.Debug.printNonEmptyThreads()
   }
 
   private def getKey: UIO[String] = {
