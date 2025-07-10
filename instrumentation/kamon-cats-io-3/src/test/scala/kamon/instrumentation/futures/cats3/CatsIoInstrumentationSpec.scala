@@ -305,7 +305,7 @@ class CatsIoInstrumentationSpec extends AnyWordSpec with Matchers with ScalaFutu
         test[IO].unsafeRunSync()(runtime)
       }
 
-      "must allow complex Span topologies to be created" in {
+      "IO must allow complex Span topologies to be created" in {
         val parentSpan = Span.Remote(
           Scheme.Single.spanIdFactory.generate(),
           Identifier.Empty,

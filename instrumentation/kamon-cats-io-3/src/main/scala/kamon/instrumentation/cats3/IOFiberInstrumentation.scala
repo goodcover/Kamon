@@ -47,8 +47,8 @@ class IOFiberInstrumentation extends InstrumentationBuilder {
   // which always leaves a dirty thread. This wrapper ensures that scheduled actions are
   // executed with the same Context that was available when they were scheduled, and then
   // reset the scheduler thread to the empty context.
-  onSubTypesOf("cats.effect.unsafe.Scheduler")
-    .advise(method("sleep"), classOf[CleanSchedulerContextAdvice])
+//  onSubTypesOf("cats.effect.unsafe.Scheduler")
+//    .advise(method("sleep"), classOf[CleanSchedulerContextAdvice])
 }
 
 /**
@@ -165,6 +165,8 @@ class SetContextOnNewFiberForWSTP
 object SetContextOnNewFiberForWSTP {
 
   @Advice.OnMethodEnter()
-  @static def enter(@Advice.Argument(0) fiber: Any): Unit =
-    fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
+  @static def enter(@Advice.Argument(0) fiber: Any): Unit = {
+    if (fiber != null && fiber.isInstanceOf[HasContext])
+      fiber.asInstanceOf[HasContext].setContext(Kamon.currentContext())
+  }
 }

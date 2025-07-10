@@ -1,6 +1,6 @@
 {
   inputs = {
-    gc-nix.url = "github:goodcover/gc-nix?ref=main";
+    gc-nix.url = "github:goodcover/gc-nix";
     flake-utils.follows = "gc-nix/flake-utils";
     nixpkgs.follows = "gc-nix/nixpkgs";
   };
@@ -12,10 +12,12 @@
           inherit system;
         };
 
-        sbt = pkgs.sbt.override {  jre = pkgs.jdk8; };
+        shell = gc-nix.devShells.${system}.app;
+
+        sbt = pkgs.sbt.override {  jre = shell.jdk; };
 
         inputs = [
-          pkgs.jdk8
+          shell.jdk
           sbt
         ];
       in

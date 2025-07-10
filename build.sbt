@@ -13,7 +13,6 @@
  * =========================================================================================
  */
 
-
 lazy val kamon = (project in file("."))
   .disablePlugins(AssemblyPlugin)
   .settings(noPublishing: _*)
@@ -259,7 +258,7 @@ lazy val `kamon-cats-io-3` = (project in file("instrumentation/kamon-cats-io-3")
     libraryDependencies ++= Seq(
       kanelaAgent % "provided",
 //      "org.typelevel" %% "cats-effect" % "3.3.14" % "provided",
-      "org.typelevel" %% "cats-effect" % "3.5.4" % "provided",
+      "org.typelevel" %% "cats-effect" % "3.6.1" % "provided",
       scalatest % "test",
       logbackClassic % "test"
     )
@@ -273,7 +272,7 @@ lazy val `kamon-zio-2` = (project in file("instrumentation/kamon-zio-2"))
     crossScalaVersions := Seq(`scala_2.13_version`, scala_3_version),
     libraryDependencies ++= Seq(
       kanelaAgent % "provided",
-      "dev.zio" %% "zio" % "2.0.21" % "provided",
+      "dev.zio" %% "zio" % "2.1.19" % "provided",
       scalatest % "test",
       logbackClassic % "test"
     )
