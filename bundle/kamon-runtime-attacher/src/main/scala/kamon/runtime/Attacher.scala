@@ -19,7 +19,7 @@ object Attacher {
   def attach(): Unit = {
     val springBootClassLoader = findSpringBootJarLauncherClassLoader()
 
-    if (isKanelaLoaded) {
+    if (isKanelaLoaded()) {
 
       // If Kanela has already been loaded and we are running on a Spring Boot application, we might need to reload
       // Kanela to ensure it will use the proper ClassLoader for loading the instrumentations.
@@ -29,7 +29,9 @@ object Attacher {
 
     } else {
 
-      val embeddedAgentFile = Attacher.getClass.getClassLoader.getResourceAsStream(BuildInfo.kanelaAgentJarName)
+      val embeddedAgentFile =
+        Option(Attacher.getClass.getClassLoader.getResourceAsStream(BuildInfo.kanelaAgentJarName))
+          .getOrElse(throw new RuntimeException(s"Couldn't find kanela jar resource '${BuildInfo.kanelaAgentJarName}'"))
       val temporaryAgentFile = Files.createTempFile(BuildInfo.kanelaAgentJarName, ".jar")
       Files.copy(embeddedAgentFile, temporaryAgentFile, StandardCopyOption.REPLACE_EXISTING)
 
