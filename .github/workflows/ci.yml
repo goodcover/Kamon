@@ -1,5 +1,11 @@
 name: Test all the things
-on: [ push, pull_request ]
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
 env:
   JAVA_OPTS: -Xms5120M -Xmx5120M -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
   JVM_OPTS: -Xms5120M -Xmx5120M -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
@@ -13,7 +19,7 @@ jobs:
       - uses: coursier/cache-action@v6
       - uses: coursier/setup-action@v1
         with:
-          jvm: adopt:8
+          jvm: zulu:17
           apps: sbt
       - name: Test
         run: sbt -v ";+core/test;+instrumentation/test;+reporters/test"
@@ -24,8 +30,7 @@ jobs:
       - uses: coursier/cache-action@v6
       - uses: coursier/setup-action@v1
         with:
-          jvm: adopt:8
+          jvm: zulu:17
           apps: sbt
       - name: Test
-        run: sbt -v "+scalafmtCheckAll"
-
+        run: sbt -v "+scalafmtCheckAll;scalafmtSbtCheck"
