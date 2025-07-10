@@ -33,15 +33,15 @@ class IOFiberInstrumentation extends InstrumentationBuilder {
 
   onTypes("cats.effect.unsafe.WorkStealingThreadPool")
     .advise(method("sleepInternal"), classOf[CleanSchedulerContextAdvice35]) // > 3.3
-    .advise(
-      anyMethods(
-        "scheduleFiber", // <3.4
-        "rescheduleFiber", // <3.4
-        "reschedule",
-        "scheduleExternal"
-      ),
-      SetContextOnNewFiberForWSTP
-    )
+//    .advise(
+//      anyMethods(
+//        "scheduleFiber", // <3.4
+//        "rescheduleFiber", // <3.4
+//        "reschedule",
+//        "scheduleExternal"
+//      ),
+//      SetContextOnNewFiberForWSTP
+//    )
 
   // For < 3.4 cats, Scheduled actions like `IO.sleep` end up calling `resume` from the scheduler thread,
   // which always leaves a dirty thread. This wrapper ensures that scheduled actions are
