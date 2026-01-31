@@ -29,7 +29,8 @@ import xerial.sbt.Sonatype.SonatypeKeys._
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
 object BaseProject extends AutoPlugin {
-  lazy val REPOSITORY_URL: String = sys.env.getOrElse("REPOSITORY_URL", throw new Exception("Missing REPOSITORY_URL"))
+  lazy val REPOSITORY_URL_SNAPSHOT: String = sys.env.getOrElse("REPOSITORY_URL_SNAPSHOT", "http://reposilite.reposilite:8080/private")
+  lazy val REPOSITORY_URL_RELEASE: String = sys.env.getOrElse("REPOSITORY_URL_RELEASE", "http://reposilite.reposilite:8080/private")
 
   object autoImport {
 
@@ -183,9 +184,9 @@ object BaseProject extends AutoPlugin {
     version := version.value + "-SNAPSHOT",
     publishTo := {
       if (isSnapshot.value)
-        Some(("Goodcover Snapshots" at s"${REPOSITORY_URL}/repository/maven-gc-snapshots").withAllowInsecureProtocol(true))
+        Some(("Goodcover Snapshots" at REPOSITORY_URL_SNAPSHOT).withAllowInsecureProtocol(true))
       else
-        Some(("Goodcover Releases" at s"${REPOSITORY_URL}/repository/maven-gc-releases").withAllowInsecureProtocol(true))
+        Some(("Goodcover Releases" at REPOSITORY_URL_RELEASE).withAllowInsecureProtocol(true))
     },
     pomExtra := defaultPomExtra(),
     Test / publishArtifact := false,
