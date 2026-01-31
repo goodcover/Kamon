@@ -12,7 +12,7 @@
           inherit system;
         };
 
-        shell = gc-nix.devShells.${system}.app;
+        shell = gc-nix.devShells.${system}.jdk17;
 
         sbt = pkgs.sbt.override {  jre = shell.jdk; };
 
