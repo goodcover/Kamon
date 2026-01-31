@@ -29,14 +29,15 @@ import xerial.sbt.Sonatype.SonatypeKeys._
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
 object BaseProject extends AutoPlugin {
-  lazy val REPOSITORY_URL: String = sys.env.getOrElse("REPOSITORY_URL", throw new Exception("Missing REPOSITORY_URL"))
+  lazy val REPOSITORY_URL_SNAPSHOT: String = sys.env.getOrElse("REPOSITORY_URL_SNAPSHOT", "http://reposilite.reposilite:8080/private")
+  lazy val REPOSITORY_URL_RELEASE: String = sys.env.getOrElse("REPOSITORY_URL_RELEASE", "http://reposilite.reposilite:8080/private")
 
   object autoImport {
 
     /** Marker configuration for dependencies that will be shaded into their module's jar.  */
     lazy val Shaded = config("shaded").hide
 
-    val kanelaAgent = "io.kamon" % "kanela-agent" % "2.0.0-beta.3"
+    val kanelaAgent = "io.kamon" % "kanela-agent" % "2.0.0"
     val slf4jApi = "org.slf4j" % "slf4j-api" % "2.0.17"
     val slf4jnop = "org.slf4j" % "slf4j-nop" % "2.0.17"
     val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.3.15"
@@ -180,15 +181,12 @@ object BaseProject extends AutoPlugin {
   )
 
   private lazy val publishingSettings = Seq(
+    version := version.value + "-SNAPSHOT",
     publishTo := {
       if (isSnapshot.value)
-        Some(
-          ("Goodcover Snapshots" at s"${REPOSITORY_URL}/repository/maven-gc-snapshots").withAllowInsecureProtocol(true)
-        )
+        Some(("Goodcover Snapshots" at REPOSITORY_URL_SNAPSHOT).withAllowInsecureProtocol(true))
       else
-        Some(
-          ("Goodcover Releases" at s"${REPOSITORY_URL}/repository/maven-gc-releases").withAllowInsecureProtocol(true)
-        )
+        Some(("Goodcover Releases" at REPOSITORY_URL_RELEASE).withAllowInsecureProtocol(true))
     },
     pomExtra := defaultPomExtra(),
     Test / publishArtifact := false,
