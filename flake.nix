@@ -12,10 +12,12 @@
           inherit system;
         };
 
-        sbt = pkgs.sbt.override {  jre = pkgs.jdk8; };
+        shell = gc-nix.devShells.${system}.jdk17;
+
+        sbt = pkgs.sbt.override {  jre = shell.jdk; };
 
         inputs = [
-          pkgs.jdk8
+          shell.jdk
           sbt
         ];
       in
